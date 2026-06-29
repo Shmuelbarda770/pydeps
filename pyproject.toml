@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "pydeps"
+version = "0.1.0"
+description = "Dependency and environment checker tool"
+readme = "README.md"
+requires-python = ">=3.11"
+
+authors = [
+  { name = "Shmuel Barda" }
+]
+
+dependencies = [
+  "requests==2.34.2",
+  "typer==0.26.8",
+  "watchdog==6.0.0"
+]
+[project.scripts]
+pydeps = "pydeps.cli:main"
