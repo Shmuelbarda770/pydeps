@@ -1,11 +1,11 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=68", "wheel", "setuptools_scm"]
 build-backend = "setuptools.build_meta"
 
 
 [project]
 name = "pydeps"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Dependency and environment checker tool"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -19,5 +19,11 @@ dependencies = [
   "typer==0.26.8",
   "watchdog==6.0.0"
 ]
+
 [project.scripts]
 pydeps = "pydeps.cli:main"
+
+
+[tool.setuptools_scm]
+version_scheme = "release-branch-semver"
+local_scheme = "no-local-version"
