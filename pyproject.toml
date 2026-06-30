@@ -20,7 +20,6 @@ authors = [
 
 dependencies = [
   "requests==2.34.2",
-  "typer==0.26.8",
   "watchdog==6.0.0"
 ]
 
@@ -29,8 +28,15 @@ depvex = "depvex.cli:main"
 
 
 [tool.setuptools]
-packages = { find = {} }
+include-package-data = false
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["depvex*"]
+exclude = ["depvex.__pycache__", "depvex.__pycache__.*"]
+
+[tool.setuptools.exclude-package-data]
+depvex = ["**/__pycache__/**", "**/*.py[cod]"]
 
 [tool.setuptools_scm]
 version_scheme = "release-branch-semver"
