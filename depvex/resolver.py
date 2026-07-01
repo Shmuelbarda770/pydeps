@@ -4,6 +4,7 @@ import os
 import subprocess
 import time
 import urllib.request
+from functools import lru_cache
 
 import requests
 
@@ -32,6 +33,7 @@ class DependencyResolver:
     def is_installed(self, module_name: str) -> bool:
         return importlib.util.find_spec(module_name) is not None
 
+    @lru_cache(maxsize=256)
     def get_local_version(self, module_name: str):
         try:
             result = subprocess.check_output(["pip", "show", module_name], text=True)
@@ -42,6 +44,7 @@ class DependencyResolver:
             return None
         return None
 
+    @lru_cache(maxsize=256)
     def get_pypi_version(self, module_name: str):
         try:
             url = f"https://pypi.org/pypi/{module_name}/json"
@@ -70,6 +73,14 @@ class DependencyResolver:
             for line in sorted(set(lines)):
                 handle.write(line + "\n")
 
+    @lru_cache(maxsize=256)
+    def _get_imports_for_file(self, file_path: str) -> tuple[str, ...]:
+        try:
+            with open(file_path, "r", encoding="utf-8") as handle:
+                return tuple(self.parser.extract_imports(handle.read()))
+        except (OSError, SyntaxError):
+            return ()
+
     def rebuild_requirements(self, root: str = ".", output_path: str | None = None) -> list[str]:
         discovered = set()
 
@@ -82,8 +93,7 @@ class DependencyResolver:
 
                 file_path = os.path.join(dirpath, filename)
                 try:
-                    with open(file_path, "r", encoding="utf-8") as handle:
-                        discovered.update(self.parser.extract_imports(handle.read()))
+                    discovered.update(self._get_imports_for_file(file_path))
                 except (OSError, SyntaxError):
                     continue
 
