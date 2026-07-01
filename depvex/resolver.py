@@ -1,6 +1,7 @@
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import time
 import urllib.request
@@ -68,6 +69,24 @@ class DependencyResolver:
 
         return module_name
 
+    def _normalize_module_name(self, module_name: str) -> str:
+        name = module_name.strip()
+        if not name or name.startswith("#"):
+            return ""
+
+        name = re.split(r"\s+#", name, maxsplit=1)[0].strip()
+        match = re.match(r"([A-Za-z0-9_.-]+)", name)
+        if not match:
+            return ""
+        return match.group(1).lower()
+
+    def _read_existing_requirements(self, path: str) -> list[str]:
+        if not os.path.exists(path):
+            return []
+
+        with open(path, "r", encoding="utf-8") as handle:
+            return [line.strip() for line in handle if line.strip() and not line.strip().startswith("#")]
+
     def write_req(self, lines, path: str = "requirements.txt") -> None:
         with open(path, "w", encoding="utf-8") as handle:
             for line in sorted(set(lines)):
@@ -81,7 +100,7 @@ class DependencyResolver:
         except (OSError, SyntaxError):
             return ()
 
-    def rebuild_requirements(self, root: str = ".", output_path: str | None = None) -> list[str]:
+    def rebuild_requirements(self, root: str = ".", output_path: str | None = None, prune_stale: bool = True) -> list[str]:
         discovered = set()
 
         for dirpath, dirnames, filenames in os.walk(root):
@@ -102,6 +121,30 @@ class DependencyResolver:
 
         requirements = []
         has_net = self.internet_check()
+
+        if prune_stale and os.path.exists(output_path):
+            existing_entries = self._read_existing_requirements(output_path)
+            existing_by_name = {
+                self._normalize_module_name(entry): entry
+                for entry in existing_entries
+                if self._normalize_module_name(entry)
+            }
+
+            for module_name in sorted(discovered):
+                if not module_name:
+                    continue
+
+                normalized = self._normalize_module_name(module_name)
+                if not normalized:
+                    continue
+
+                if normalized in existing_by_name:
+                    requirements.append(existing_by_name[normalized])
+                else:
+                    requirements.append(self.resolve(module_name, has_net))
+
+            return self.write_req(requirements, path=output_path) or requirements
+
         for module_name in sorted(discovered):
             if module_name:
                 requirements.append(self.resolve(module_name, has_net))
