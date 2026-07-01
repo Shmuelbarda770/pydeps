@@ -1,9 +1,26 @@
 from pathlib import Path
 import argparse
+import os
 import sys
 
 from depvex.watcher import ProjectWatcher
 from depvex.resolver import DependencyResolver
+
+
+class Colors:
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    RED = "\033[91m"
+    CYAN = "\033[96m"
+    RESET = "\033[0m"
+
+    @classmethod
+    def enabled(cls) -> bool:
+        return os.getenv("NO_COLOR") is None and os.getenv("TERM") not in {None, "dumb"}
+
+    @classmethod
+    def colorize(cls, text: str, color: str) -> str:
+        return f"{color}{text}{cls.RESET}" if cls.enabled() else text
 
 
 class DepvexCLI:
@@ -25,17 +42,19 @@ class DepvexCLI:
         return parser
 
     def scan(self, path: str) -> int:
-        print(f"[depvex] Scanning {path} ...")
+        print(Colors.colorize(f"[depvex] Starting one-time scan for {path}...", Colors.CYAN))
         resolver = DependencyResolver()
-        resolver.rebuild_requirements(path)
+        requirements = resolver.rebuild_requirements(path)
+        print(Colors.colorize(f"[depvex] Updated requirements.txt with {len(requirements)} dependency entries.", Colors.GREEN))
         return 0
 
     def check(self, path: str) -> int:
-        print(f"[depvex] Checking {path} ...")
+        print(Colors.colorize(f"[depvex] Checking whether {path}/requirements.txt is up to date...", Colors.CYAN))
         resolver = DependencyResolver()
         output_path = Path(path) / "requirements.txt"
 
         if not output_path.exists():
+            print(Colors.colorize("[depvex] No requirements.txt found. Run 'depvex scan .' first.", Colors.RED))
             return 1
 
         discovered = set()
@@ -51,12 +70,15 @@ class DepvexCLI:
         current_requirements = [line.strip() for line in output_path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
         if set(expected_requirements) != set(current_requirements):
+            print(Colors.colorize("[depvex] requirements.txt is out of date. Run 'depvex scan .' to update it.", Colors.YELLOW))
             return 1
 
+        print(Colors.colorize("[depvex] requirements.txt is already up to date.", Colors.GREEN))
         return 0
 
     def watch(self, path: str) -> None:
-        print(f"[depvex] Watching {path} ...")
+        print(Colors.colorize(f"[depvex] Starting watch mode for {path}...", Colors.CYAN))
+        print(Colors.colorize("[depvex] Depvex will keep scanning and updating requirements.txt as files change.", Colors.YELLOW))
 
         resolver = DependencyResolver()
         resolver.rebuild_requirements(path)
