@@ -86,9 +86,29 @@ This will also install the required dependencies, including:
 
 ## How to run it
 
-### Basic mode: one-time scan
+### One-time scan
 
-If you want to create or update requirements.txt based on the code currently in the project, run:
+If you want to create or update requirements.txt once, run:
+
+```bash
+depvex scan .
+```
+
+This performs a single pass over the project and writes the current dependency set into requirements.txt.
+
+### Check mode
+
+If you want to verify whether the current requirements.txt matches the imports in your project, run:
+
+```bash
+depvex check .
+```
+
+This runs the same import scan and reports whether the dependency list is current.
+
+### Watch mode
+
+If you want depvex to keep updating requirements.txt while you work, run:
 
 ```bash
 depvex watch .
@@ -99,6 +119,8 @@ This will start watching your code for changes and update requirements.txt whene
 ### Running against another path
 
 ```bash
+depvex scan ./my-project
+depvex check ./my-project
 depvex watch ./my-project
 ```
 
