@@ -4,8 +4,6 @@ import sys
 
 from depvex.watcher import ProjectWatcher
 
-
-
 class DepvexCLI:
     def __init__(self) -> None:
         self.parser = self._build_parser()
@@ -20,7 +18,11 @@ class DepvexCLI:
 
     def watch(self, path: str) -> None:
         print(f"[depvex] Watching {path} ...")
-        ProjectWatcher(path).start()
+        from depvex.resolver import DependencyResolver
+
+        resolver = DependencyResolver()
+        resolver.rebuild_requirements(path)
+        ProjectWatcher(path, resolver=resolver).start()
 
     def run(self, argv: list[str] | None = None) -> int:
         args = self.parser.parse_args(argv or sys.argv[1:])
